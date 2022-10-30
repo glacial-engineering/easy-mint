@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../dino"
+		},
+		{
+			"path": "../solana-program-library/token"
+		}
+	],
+	"settings": {}
+}

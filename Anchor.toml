@@ -1,0 +1,28 @@
+[features]
+seeds = true
+skip-lint = false
+
+[programs.localnet]
+easy_mint = "ezMY4T9fFpdqHTGXn36TA5RBSZRi4Dr7GBEP7AqSWPQ"
+
+[programs.devnet]
+easy_mint = "ezMY4T9fFpdqHTGXn36TA5RBSZRi4Dr7GBEP7AqSWPQ"
+
+[programs.mainnet]
+easy_mint = "ezMY4T9fFpdqHTGXn36TA5RBSZRi4Dr7GBEP7AqSWPQ"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test.validator]
+url = "https://api.mainnet-beta.solana.com"
+
+[[test.validator.clone]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
