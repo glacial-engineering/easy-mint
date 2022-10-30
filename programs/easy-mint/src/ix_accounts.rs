@@ -4,18 +4,18 @@ use anchor_spl::{token::{Token, TokenAccount, Mint}, associated_token::Associate
 use crate::state::MintDefinition;
 
 #[derive(Accounts)]
-#[instruction(owner: Pubkey, memorable_word: String)]
+#[instruction(memorable_word: String)]
 pub struct CreateMintDefinition<'info> {
     #[account(
       mut,
     )]
-    pub payer: Signer<'info>,
+    pub owner: Signer<'info>,
 
     #[account(
       init,
-      seeds = [ memorable_word.as_bytes(), owner.as_ref() ],
+      seeds = [ memorable_word.as_bytes(), owner.key().as_ref() ],
       bump,
-      payer = payer,
+      payer = owner,
       space = MintDefinition::SPACE + 8,
     )]
     pub mint_definition: Box<Account<'info, MintDefinition>>,
@@ -24,7 +24,7 @@ pub struct CreateMintDefinition<'info> {
       init,
       seeds = [ mint_definition.key().as_ref() ],
       bump,
-      payer = payer,
+      payer = owner,
       mint::authority = mint,
       mint::decimals = 0,
     )]

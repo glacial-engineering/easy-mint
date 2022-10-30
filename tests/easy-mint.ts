@@ -45,7 +45,6 @@ describe("easy-mint", () => {
     try {
       const tx = await program.methods
         .createMintDefinition(
-          vault_dude.publicKey,
           memorableWord,
           myMint,
           new anchor.BN(100),
@@ -55,7 +54,7 @@ describe("easy-mint", () => {
           500
         )
         .accounts({
-          payer: vault_dude.publicKey,
+          owner: vault_dude.publicKey,
           mintDefinition: mintDefinition,
           mint: mint,
           mintMetadataAccount: metadata,

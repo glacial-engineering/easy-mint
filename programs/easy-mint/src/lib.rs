@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::invoke_signed;
+use anchor_lang::solana_program::program::{invoke_signed, invoke};
 use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
 
 use mpl_token_metadata::instruction::create_metadata_accounts_v3;
@@ -15,11 +15,12 @@ declare_id!("ezMY4T9fFpdqHTGXn36TA5RBSZRi4Dr7GBEP7AqSWPQ");
 
 #[program]
 pub mod easy_mint {
+    use mpl_token_metadata::instruction::sign_metadata;
+
     use super::*;
 
     pub fn create_mint_definition(
         ctx: Context<CreateMintDefinition>,
-        owner: Pubkey,
         memorable_word: String,
         price_mint: Pubkey,
         price: u64,
@@ -31,7 +32,7 @@ pub mod easy_mint {
         //set our mint defintion
         let md = &mut ctx.accounts.mint_definition;
         md.bump = ctx.bumps["mint_definition"];
-        md.owner = owner;
+        md.owner = ctx.accounts.owner.key();
         md.price_mint = price_mint;
         md.price = price;
         md.memorable_word = memorable_word;
@@ -44,18 +45,23 @@ pub mod easy_mint {
                 verified: true,
             },
             Creator {
-                address: owner,
+                address: md.key(),
+                share: 0,
+                verified: false,
+            },
+            Creator {
+                address: ctx.accounts.owner.key(),
                 share: 100,
                 verified: false,
             },
         ];
 
-        let create_metadata = create_metadata_accounts_v3(
+        let ix = create_metadata_accounts_v3(
             ctx.accounts.metadata_program.key(),
             ctx.accounts.mint_metadata_account.key(),
             ctx.accounts.mint.key(),
             ctx.accounts.mint.key(), //mint auth
-            ctx.accounts.payer.key(),
+            ctx.accounts.owner.key(),
             ctx.accounts.mint.key(), //update auth
             mint_name,
             mint_symbol,
@@ -71,23 +77,51 @@ pub mod easy_mint {
         let accounts = [
             ctx.accounts.mint_metadata_account.to_account_info(),
             ctx.accounts.mint.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.metadata_program.to_account_info(),
+            ctx.accounts.owner.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ];
         invoke_signed(
-            &create_metadata,
+            &ix,
             &accounts,
             &[&[md.key().as_ref(), &[ctx.bumps["mint"]]]],
+        )?;
+
+        //mint def sign
+        let ix = sign_metadata(
+            ctx.accounts.metadata_program.key(),
+            ctx.accounts.mint_metadata_account.key(),
+            md.key(),
+        );
+        let accounts = [
+            ctx.accounts.mint_metadata_account.to_account_info(),
+            md.to_account_info(),
+        ];
+        invoke_signed(
+            &ix,
+            &accounts,
+            &[&[md.memorable_word.as_bytes(), md.owner.as_ref(), &[md.bump]]],
+        )?;
+
+        //owner sign
+        let ix = sign_metadata(
+            ctx.accounts.metadata_program.key(),
+            ctx.accounts.mint_metadata_account.key(),
+            ctx.accounts.owner.key(),
+        );
+        let accounts = [
+            ctx.accounts.mint_metadata_account.to_account_info(),
+            ctx.accounts.owner.to_account_info(),
+        ];
+        invoke(
+            &ix,
+            &accounts,
         )?;
 
         Ok(())
     }
 
-    pub fn update_mint_definition(
+    pub fn update_mint_price(
         ctx: Context<UpdateMintDefinition>,
         price_mint: Pubkey,
         price: u64,
