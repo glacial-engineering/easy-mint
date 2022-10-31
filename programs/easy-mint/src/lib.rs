@@ -24,6 +24,7 @@ pub mod easy_mint {
         memorable_word: String,
         price_mint: Pubkey,
         price: u64,
+        expiration_date: u64,
         mint_name: String,
         mint_symbol: String,
         mint_uri: String,
@@ -35,6 +36,7 @@ pub mod easy_mint {
         md.owner = ctx.accounts.owner.key();
         md.price_mint = price_mint;
         md.price = price;
+        md.expiration_date = expiration_date;
         md.memorable_word = memorable_word;
 
         //create the metaplex metadata
@@ -129,6 +131,16 @@ pub mod easy_mint {
         let md = &mut ctx.accounts.mint_definition;
         md.price_mint = price_mint;
         md.price = price;
+
+        Ok(())
+    }
+
+    pub fn update_mint_expirate_date(
+        ctx: Context<UpdateMintDefinition>,
+        expiration_date: u64,
+    ) -> Result<()> {
+        let md = &mut ctx.accounts.mint_definition;
+        md.expiration_date = expiration_date;
 
         Ok(())
     }

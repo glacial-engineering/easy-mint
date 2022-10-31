@@ -1,4 +1,4 @@
-use anchor_lang::{Accounts, prelude::*};
+use anchor_lang::{Accounts, prelude::*, solana_program::clock::Clock};
 use anchor_spl::{token::{Token, TokenAccount, Mint}, associated_token::AssociatedToken};
 
 use crate::state::MintDefinition;
@@ -52,6 +52,9 @@ pub struct PleaseMintToken<'info> {
     )]
     pub payer: Signer<'info>,
 
+    #[account(
+      constraint = Clock::get().unwrap().unix_timestamp < mint_definition.expiration_date.try_into().unwrap(),
+    )]
     pub mint_definition: Box<Account<'info, MintDefinition>>,
     
     #[account(
