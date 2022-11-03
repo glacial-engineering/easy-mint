@@ -64,7 +64,7 @@ describe("easy-mint", () => {
           mintDefinition: mintDefinition,
           mint: mint,
           mintMetadataAccount: metadata,
-          metadataProgram: mpl.PROGRAM_ID,
+          metadataProgram: mpl.PROGRAM_ID
         })
         .signers([vault_dude])
         .rpc();
@@ -85,7 +85,6 @@ describe("easy-mint", () => {
           payWithMint: myMint,
           payToAccount: vault_dude.publicKey,
           payFromTokenAcct: payerPaymentAta,
-          mintDefinitionOwner: vault_dude.publicKey,
           payToTokenAcct: await token.getAssociatedTokenAddress(myMint, vault_dude.publicKey),
           recipientWallet: payer.publicKey,
           mint: mint,

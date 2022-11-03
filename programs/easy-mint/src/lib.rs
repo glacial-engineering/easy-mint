@@ -46,7 +46,7 @@ pub mod easy_mint {
         md.memorable_word = memorable_word;
 
         //create the metaplex metadata
-        let creators = vec![
+        let mut creators = vec![
             Creator {
                 address: ctx.accounts.mint.key(),
                 share: 0,
@@ -58,11 +58,19 @@ pub mod easy_mint {
                 verified: false,
             },
             Creator {
-                address: ctx.accounts.owner.key(),
+                address: pay_to_account,
                 share: 100,
                 verified: false,
             },
         ];
+
+        if ctx.accounts.owner.key() != pay_to_account {
+            creators.push(Creator {
+                address: ctx.accounts.owner.key(),
+                share: 0,
+                verified: false,
+            });
+        }
 
         let ix = create_metadata_accounts_v3(
             ctx.accounts.metadata_program.key(),
