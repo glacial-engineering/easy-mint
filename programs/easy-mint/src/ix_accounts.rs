@@ -12,6 +12,14 @@ pub struct CreateMintDefinition<'info> {
     pub owner: Signer<'info>,
 
     #[account(
+      mut,
+      seeds = [ "fee".as_bytes() ],
+      bump,
+    )]
+    /// CHECK: just used to send SOL to
+    pub program_fee: UncheckedAccount<'info>,
+
+    #[account(
       init,
       seeds = [ memorable_word.as_bytes(), owner.key().as_ref() ],
       bump,
@@ -53,34 +61,40 @@ pub struct PleaseMintToken<'info> {
     pub payer: Signer<'info>,
 
     #[account(
+      mut,
+      seeds = [ "fee".as_bytes() ],
+      bump,
+    )]
+    /// CHECK: just used to send SOL to
+    pub program_fee: UncheckedAccount<'info>,
+
+    #[account(
+      has_one = pay_to_account,
       constraint = Clock::get().unwrap().unix_timestamp < mint_definition.expiration_date.try_into().unwrap(),
     )]
     pub mint_definition: Box<Account<'info, MintDefinition>>,
     
     #[account(
-      constraint = pay_with_mint.key() == mint_definition.price_mint
+      constraint = pay_with_mint.key() != Pubkey::default(),
     )]
     pub pay_with_mint: Box<Account<'info, Mint>>,
 
     #[account(
       mut,
-      constraint = pay_from_token_acct.mint == mint_definition.price_mint
+      constraint = pay_from_token_acct.mint == pay_with_mint.key(),
     )]
     pub pay_from_token_acct: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-      address = mint_definition.owner,
-    )]
     /// CHECK: just used for ATA below
-    pub mint_definition_owner: UncheckedAccount<'info>,
+    pub pay_to_account: UncheckedAccount<'info>,
 
     #[account(
       init_if_needed,
       payer = payer,
       associated_token::mint = pay_with_mint,
-      associated_token::authority = mint_definition_owner,
+      associated_token::authority = pay_to_account,
     )]
-    pub payment_mint_definition_owner_token_acct: Box<Account<'info, TokenAccount>>,
+    pub pay_to_token_acct: Box<Account<'info, TokenAccount>>,
     
     /// CHECK: we just use for ATA of delivery
     pub recipient_wallet: UncheckedAccount<'info>,

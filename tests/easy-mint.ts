@@ -42,12 +42,18 @@ describe("easy-mint", () => {
   });
 
   it("Configured!", async () => {
+
+    const expDate = Math.floor(Date.now() / 1000) + 10;
+    console.log("expiry is", expDate);
+
     try {
       const tx = await program.methods
         .createMintDefinition(
           memorableWord,
+          vault_dude.publicKey,
           myMint,
           new anchor.BN(100),
+          new anchor.BN(expDate),
           "Dana Mint",
           "DM",
           "metadataurl",
@@ -77,9 +83,10 @@ describe("easy-mint", () => {
           payer: payer.publicKey,
           mintDefinition: mintDefinition,
           payWithMint: myMint,
+          payToAccount: vault_dude.publicKey,
           payFromTokenAcct: payerPaymentAta,
           mintDefinitionOwner: vault_dude.publicKey,
-          paymentMintDefinitionOwnerTokenAcct: await token.getAssociatedTokenAddress(myMint, vault_dude.publicKey),
+          payToTokenAcct: await token.getAssociatedTokenAddress(myMint, vault_dude.publicKey),
           recipientWallet: payer.publicKey,
           mint: mint,
           deliveryTokenAcct: await token.getAssociatedTokenAddress(mint, payer.publicKey),

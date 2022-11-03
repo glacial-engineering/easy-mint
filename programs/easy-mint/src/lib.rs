@@ -1,8 +1,10 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::{invoke_signed, invoke};
+use anchor_lang::solana_program::program::{invoke, invoke_signed};
+use anchor_lang::solana_program::system_instruction;
 use anchor_spl::token::{mint_to, transfer, MintTo, Transfer};
 
 use mpl_token_metadata::instruction::create_metadata_accounts_v3;
+use mpl_token_metadata::instruction::sign_metadata;
 use mpl_token_metadata::state::Creator;
 
 mod error;
@@ -13,15 +15,18 @@ use ix_accounts::*;
 
 declare_id!("ezMY4T9fFpdqHTGXn36TA5RBSZRi4Dr7GBEP7AqSWPQ");
 
+const PROGRAM_FEE_CREATE_DEF: u64 = 0;//1000000000;
+const PROGRAM_FEE_MINT: u64 = 0;//10000000;
+
 #[program]
 pub mod easy_mint {
-    use mpl_token_metadata::instruction::sign_metadata;
 
     use super::*;
 
     pub fn create_mint_definition(
         ctx: Context<CreateMintDefinition>,
         memorable_word: String,
+        pay_to_account: Pubkey,
         price_mint: Pubkey,
         price: u64,
         expiration_date: u64,
@@ -34,8 +39,9 @@ pub mod easy_mint {
         let md = &mut ctx.accounts.mint_definition;
         md.bump = ctx.bumps["mint_definition"];
         md.owner = ctx.accounts.owner.key();
-        md.price_mint = price_mint;
-        md.price = price;
+        md.pay_to_account = pay_to_account;
+        md.price_mint[0] = price_mint;
+        md.price[0] = price;
         md.expiration_date = expiration_date;
         md.memorable_word = memorable_word;
 
@@ -115,10 +121,21 @@ pub mod easy_mint {
             ctx.accounts.mint_metadata_account.to_account_info(),
             ctx.accounts.owner.to_account_info(),
         ];
-        invoke(
-            &ix,
-            &accounts,
-        )?;
+        invoke(&ix, &accounts)?;
+
+        //take the fee
+        if PROGRAM_FEE_CREATE_DEF > 0 {
+            let ix = system_instruction::transfer(
+                ctx.accounts.owner.key,
+                ctx.accounts.program_fee.key,
+                PROGRAM_FEE_CREATE_DEF,
+            );
+            let accounts = [
+                ctx.accounts.owner.to_account_info(),
+                ctx.accounts.program_fee.to_account_info(),
+            ];
+            invoke(&ix, &accounts)?;
+        }
 
         Ok(())
     }
@@ -129,13 +146,28 @@ pub mod easy_mint {
         price: u64,
     ) -> Result<()> {
         let md = &mut ctx.accounts.mint_definition;
-        md.price_mint = price_mint;
-        md.price = price;
-
-        Ok(())
+        if let Some(idx) = md.price_mint.iter().position(|a|a == &price_mint) {
+            if price == u64::MAX {
+                //max u64 is a flag to delete
+                md.price[idx] = 0;
+                md.price_mint[idx] = Pubkey::default();
+            } else {
+                //update existing
+                md.price[idx] = price;
+            }
+            Ok(())
+        } else if let Some(idx) = md.price_mint.iter().position(|a|a == &Pubkey::default()) {
+            //a new mint
+            md.price_mint[idx] = price_mint;
+            md.price[idx] = price;
+            Ok(())
+        } else {
+            //no more room for a price
+            Err(error!(error::EasyMintErrorCode::MaxMintPrices))
+        }
     }
 
-    pub fn update_mint_expirate_date(
+    pub fn update_mint_expiry_date(
         ctx: Context<UpdateMintDefinition>,
         expiration_date: u64,
     ) -> Result<()> {
@@ -146,22 +178,33 @@ pub mod easy_mint {
     }
 
     pub fn please_mint_token(ctx: Context<PleaseMintToken>) -> Result<()> {
-        if ctx.accounts.mint_definition.price > 0 {
+        let md = &ctx.accounts.mint_definition;
+        let price_mint = ctx.accounts.pay_from_token_acct.mint;
+        
+        let price: u64;
+        if let Some(idx) = md.price_mint.iter().position(|a|a == &price_mint) {
+            price = md.price[idx];
+        } else {
+            //price doesn't exist for this mint
+            return Err(error!(error::EasyMintErrorCode::InvalidPriceMint))
+        }
+
+        if price > 0 {
             let cpi = CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
                     from: ctx.accounts.pay_from_token_acct.to_account_info(),
                     to: ctx
                         .accounts
-                        .payment_mint_definition_owner_token_acct
+                        .pay_to_token_acct
                         .to_account_info(),
                     authority: ctx.accounts.payer.to_account_info(),
                 },
             );
-            transfer(cpi, ctx.accounts.mint_definition.price)?;
+            transfer(cpi, price)?;
         }
 
-        let mint_def_key = ctx.accounts.mint_definition.key();
+        let mint_def_key = md.key();
         let signer_seeds = [&[mint_def_key.as_ref(), &[ctx.bumps["mint"]] as &[u8]] as &[&[u8]]];
         let cpi = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -173,6 +216,20 @@ pub mod easy_mint {
         )
         .with_signer(&signer_seeds);
         mint_to(cpi, 1)?;
+
+        //take the fee
+        if PROGRAM_FEE_MINT > 0 {
+            let ix = system_instruction::transfer(
+                ctx.accounts.payer.key,
+                ctx.accounts.program_fee.key,
+                PROGRAM_FEE_MINT,
+            );
+            let accounts = [
+                ctx.accounts.payer.to_account_info(),
+                ctx.accounts.program_fee.to_account_info(),
+            ];
+            invoke(&ix, &accounts)?;
+        }
 
         Ok(())
     }
