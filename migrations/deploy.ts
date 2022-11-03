@@ -18,7 +18,13 @@ module.exports = async function (provider) {
   
   //let payTo = new anchor.web3.PublicKey("Dana2JeMV2W74btnsquyoWh3CFTe57FjYt3B3w4GgYUm");
   let payTo = new anchor.web3.PublicKey("AQGGa2C2JHoVKprpHVhxt1vmff6jgfwLgy9A6yzsFkbV");
-  console.log("payer", provider.wallet.publicKey.toBase58());
+  // console.log("payer", provider.wallet.publicKey.toBase58());
+
+  // var acct = await program.account.mintDefinition.fetch("EeGYjjLXY4TSY8ANYLQ4PxJ1NreXQSinvn7uy83s6Nav");
+  // console.log("owner", acct.owner.toBase58());
+  // console.log("payToAccount", acct.payToAccount.toBase58());
+  // console.log("priceMint", acct.priceMint[0].toBase58());
+  // console.log("price", acct.price[0].toString());
 
   let memorableWord = "hl-og-usdc-1";
   let mintDefinition = anchor.utils.publicKey.findProgramAddressSync([Buffer.from(memorableWord), provider.publicKey.toBuffer()], program.programId)[0];
