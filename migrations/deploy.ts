@@ -31,35 +31,36 @@ module.exports = async function (provider) {
   let mint = anchor.utils.publicKey.findProgramAddressSync([mintDefinition.toBuffer()], program.programId)[0];
   let metadata = anchor.utils.publicKey.findProgramAddressSync([Buffer.from("metadata"), mpl.PROGRAM_ID.toBuffer(), mint.toBuffer()], mpl.PROGRAM_ID)[0];
 
-  console.log("creating mint definition", mintDefinition.toBase58());
+  // console.log("creating mint definition", mintDefinition.toBase58());
 
-  try {
-    const tx = await program.methods
-      .createMintDefinition(
-        memorableWord,
-        payTo,
-        myMint,
-        new anchor.BN(225000000),
-        new anchor.BN(1669852800),
-        "PussyDAO OG List Token",
-        "PD-HL-1",
-        "https://4ufbz4hahjk5ueuu4dbvkeb6ts4p5ddkxa553l37346wgv6pvrwa.arweave.net/5Qoc8OA6VdoSlODDVRA-nLj-jGq4O92vf989Y1fPrGw?ext=json",
-        //"https://gdybaqxreesa6kvg73kqgv5mb3ab5wmdjdndc24dk6argdzce33a.arweave.net/MPAQQvEhJA8qpv7VA1esDsAe2YNI2jFrg1eBEw8iJvY?ext=json",
-        500
-      )
-      .accounts({
-        owner: provider.publicKey,
-        mintDefinition: mintDefinition,
-        mint: mint,
-        mintMetadataAccount: metadata,
-        metadataProgram: mpl.PROGRAM_ID,
-      })
-      .rpc();
-    console.log("Your transaction signature", tx);
-  } catch (e) {
-    console.log(JSON.stringify(e, null, 2));
-    throw e;
-  }
+  // try {
+  //   const tx = await program.methods
+  //     .createMintDefinition(
+  //       memorableWord,
+  //       payTo,
+  //       myMint,
+  //       new anchor.BN(225000000),
+  //       new anchor.BN(1669852800),
+  //       "PussyDAO OG List Token",
+  //       "PD-HL-1",
+  //       "https://4ufbz4hahjk5ueuu4dbvkeb6ts4p5ddkxa553l37346wgv6pvrwa.arweave.net/5Qoc8OA6VdoSlODDVRA-nLj-jGq4O92vf989Y1fPrGw?ext=json",
+  //       //"https://gdybaqxreesa6kvg73kqgv5mb3ab5wmdjdndc24dk6argdzce33a.arweave.net/MPAQQvEhJA8qpv7VA1esDsAe2YNI2jFrg1eBEw8iJvY?ext=json",
+  //       500,
+  //       100,
+  //     )
+  //     .accounts({
+  //       owner: provider.publicKey,
+  //       mintDefinition: mintDefinition,
+  //       mint: mint,
+  //       mintMetadataAccount: metadata,
+  //       metadataProgram: mpl.PROGRAM_ID,
+  //     })
+  //     .rpc();
+  //   console.log("Your transaction signature", tx);
+  // } catch (e) {
+  //   console.log(JSON.stringify(e, null, 2));
+  //   throw e;
+  // }
 
   // await delay(3000);
   
@@ -83,6 +84,20 @@ module.exports = async function (provider) {
   //   console.log(JSON.stringify(e, null, 2));
   //   throw e;
   // }
+  
+  try {
+    const tx = await program.methods
+      .updateMintSupplyLimit(100)
+      .accounts({
+        owner: provider.publicKey,
+        mintDefinition: mintDefinition,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  } catch (e) {
+    console.log(JSON.stringify(e, null, 2));
+    throw e;
+  }
 };
 
 function delay(t: number) {

@@ -86,6 +86,7 @@ pub struct PleaseMintToken<'info> {
     pub pay_from_token_acct: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: just used for ATA below
+    #[account()]
     pub pay_to_account: UncheckedAccount<'info>,
 
     #[account(

@@ -2,6 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { EasyMint } from "../target/types/easy_mint";
 import * as token from "@solana/spl-token";
 import * as mpl from "@metaplex-foundation/mpl-token-metadata"
+import { assert } from "chai";
 
 describe("easy-mint", () => {
   let provider = anchor.AnchorProvider.env();
@@ -57,7 +58,8 @@ describe("easy-mint", () => {
           "Dana Mint",
           "DM",
           "metadataurl",
-          500
+          500,
+          1,
         )
         .accounts({
           owner: vault_dude.publicKey,
@@ -97,6 +99,30 @@ describe("easy-mint", () => {
       console.log(JSON.stringify(e, null, 2));
       throw e;
     }
+  });
+
+  it("Failed to mint past supply", async () => {
+    try {
+      const tx = await program.methods
+        .pleaseMintToken()
+        .accounts({
+          payer: payer.publicKey,
+          mintDefinition: mintDefinition,
+          payWithMint: myMint,
+          payToAccount: vault_dude.publicKey,
+          payFromTokenAcct: payerPaymentAta,
+          payToTokenAcct: await token.getAssociatedTokenAddress(myMint, vault_dude.publicKey),
+          recipientWallet: payer.publicKey,
+          mint: mint,
+          deliveryTokenAcct: await token.getAssociatedTokenAddress(mint, payer.publicKey),
+        })
+        .signers([payer])
+        .rpc();
+    } catch (e) {
+      //success
+      return;
+    }
+    assert.fail("didn't fail mint");
   });
 });
 

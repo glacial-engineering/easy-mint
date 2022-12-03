@@ -6,4 +6,6 @@ pub enum EasyMintErrorCode {
   InvalidPriceMint,
   #[msg("Maximum number of mint pricing reached")]
   MaxMintPrices,
+  #[msg("Maximum supply reached")]
+  MaxSupply,
 }

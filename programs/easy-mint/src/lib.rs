@@ -34,6 +34,7 @@ pub mod easy_mint {
         mint_symbol: String,
         mint_uri: String,
         basis_points: u16,
+        supply_limit: Option<u32>,
     ) -> Result<()> {
         //set our mint defintion
         let md = &mut ctx.accounts.mint_definition;
@@ -44,6 +45,7 @@ pub mod easy_mint {
         md.price[0] = price;
         md.expiration_date = expiration_date;
         md.memorable_word = memorable_word;
+        md.supply_limit = supply_limit;
 
         //create the metaplex metadata
         let mut creators = vec![
@@ -185,9 +187,22 @@ pub mod easy_mint {
         Ok(())
     }
 
+    pub fn update_mint_supply_limit(
+        ctx: Context<UpdateMintDefinition>,
+        supply_limit: Option<u32>,
+    ) -> Result<()> {
+        let md = &mut ctx.accounts.mint_definition;
+        md.supply_limit = supply_limit;
+
+        Ok(())
+    }
+
     pub fn please_mint_token(ctx: Context<PleaseMintToken>) -> Result<()> {
         let md = &ctx.accounts.mint_definition;
         let price_mint = ctx.accounts.pay_from_token_acct.mint;
+
+        require!(ctx.accounts.mint.supply < md.supply_limit.map_or(u64::MAX, |a|a.into()), 
+            error::EasyMintErrorCode::MaxSupply);
         
         let price: u64;
         if let Some(idx) = md.price_mint.iter().position(|a|a == &price_mint) {
